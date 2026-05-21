@@ -78,14 +78,20 @@ internal static class TermServiceManager
         try
         {
             using var svc = new ServiceController(serviceName);
-            if (svc.Status != ServiceControllerStatus.Stopped)
+
+            if (svc.Status == ServiceControllerStatus.Stopped)
+                return;
+
+            if (svc.CanStop)
             {
                 svc.Stop();
             }
+
+            svc.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(30));
         }
-        catch
+        catch (Exception ex)
         {
-            // Match `-ErrorAction SilentlyContinue` from the script.
+            Console.WriteLine($"WARNING: Failed to stop {serviceName}: {ex.Message}");
         }
     }
 }
