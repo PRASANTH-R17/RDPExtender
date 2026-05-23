@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -17,7 +17,25 @@ internal static class Program
             return TryElevate(args);
         }
 
+        if (args.Length > 0)
+        {
+            if (string.Equals(args[0], "revert", StringComparison.OrdinalIgnoreCase))
+            {
+                return RevertRunner.Run();
+            }
+
+            PrintUsage();
+            return 1;
+        }
+
         return PatcherRunner.Run();
+    }
+
+    private static void PrintUsage()
+    {
+        Console.WriteLine("Usage:");
+        Console.WriteLine("  RDPExtender.exe         Patch termsrv.dll to allow multiple RDP sessions");
+        Console.WriteLine("  RDPExtender.exe revert  Restore termsrv.dll from termsrv.dll.copy backup");
     }
 
     private static bool IsAdministrator()
@@ -76,3 +94,4 @@ internal static class Program
         return string.Equals(Path.GetFileName(executablePath), "dotnet.exe", StringComparison.OrdinalIgnoreCase);
     }
 }
+
