@@ -20,16 +20,11 @@ internal static class Windows7Patcher
         @"83 7C 24 50 00 74 43 48 8D",
         RegexOptions.Compiled);
 
-    public static PatchOutcome Update(
-        string fullOsBuild,
-        string termsrvDllAsText,
-        string termsrvDllAsFile,
-        string termsrvDllAsPatch)
+    public static PatchAssessment Assess(string fullOsBuild, string termsrvDllAsText)
     {
         if (termsrvDllAsText.Contains(PatchPatterns.Win7Replacement, StringComparison.Ordinal))
         {
-            WriteColor("The file is already patched. No changes are needed.\n", ConsoleColor.Green);
-            return PatchOutcome.AlreadyPatched;
+            return PatchAssessment.AlreadyPatched;
         }
 
         var dllAsTextReplaced = fullOsBuild switch
@@ -39,11 +34,23 @@ internal static class Windows7Patcher
             _ => PatchBuild24546(termsrvDllAsText)
         };
 
-        if (string.Equals(dllAsTextReplaced, termsrvDllAsText, StringComparison.Ordinal))
+        return string.Equals(dllAsTextReplaced, termsrvDllAsText, StringComparison.Ordinal)
+            ? PatchAssessment.PatternNotFound
+            : PatchAssessment.NeedsPatch;
+    }
+
+    public static PatchOutcome Update(
+        string fullOsBuild,
+        string termsrvDllAsText,
+        string termsrvDllAsFile,
+        string termsrvDllAsPatch)
+    {
+        var dllAsTextReplaced = fullOsBuild switch
         {
-            WriteColor("The pattern was not found. Nothing will be changed.\n", ConsoleColor.Yellow);
-            return PatchOutcome.PatternNotFound;
-        }
+            "7601.23964" => PatchBuild23964(termsrvDllAsText),
+            "7601.24546" => PatchBuild24546(termsrvDllAsText),
+            _ => PatchBuild24546(termsrvDllAsText)
+        };
 
         var dllAsBytesReplaced = HexConverter.HexStringToBytes(dllAsTextReplaced);
         File.WriteAllBytes(termsrvDllAsPatch, dllAsBytesReplaced);
@@ -82,12 +89,5 @@ internal static class Windows7Patcher
         replaced = SecondaryPattern.Replace(replaced, "4C 24 60 BB 00 00 00 00", count: 1);
         replaced = TertiaryPattern43.Replace(replaced, "83 7C 24 50 00 EB 18 48 8D", count: 1);
         return replaced;
-    }
-
-    private static void WriteColor(string message, ConsoleColor color)
-    {
-        Console.ForegroundColor = color;
-        Console.WriteLine(message);
-        Console.ResetColor();
     }
 }
