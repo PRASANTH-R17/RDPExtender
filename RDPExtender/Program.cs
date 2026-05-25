@@ -28,7 +28,8 @@ internal static class Program
             return 1;
         }
 
-        return PatcherRunner.Run();
+        int status = PatcherRunner.Run();
+        return status;
     }
 
     private static void PrintUsage()

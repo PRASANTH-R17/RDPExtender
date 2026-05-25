@@ -1,0 +1,26 @@
+<UserControl x:Class="RDPExtender.UI.Controls.StatusRow"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:RDPExtender.UI.Controls"
+             xmlns:models="clr-namespace:RDPExtender.Models;assembly=RDPExtender">
+    <Grid Margin="0,8">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="180" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <TextBlock Text="{Binding Label, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                   FontSize="13"
+                   Foreground="{StaticResource TextPrimaryBrush}"
+                   VerticalAlignment="Center" />
+        <TextBlock Grid.Column="1"
+                   Text="{Binding RowIconGlyph, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                   Style="{StaticResource FluentIcon}"
+                   FontSize="16"
+                   Foreground="{StaticResource SuccessFgBrush}"
+                   HorizontalAlignment="Center" />
+        <controls:StatusBadge Grid.Column="2"
+                              Level="{Binding Level, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                              Text="{Binding StatusText, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+    </Grid>
+</UserControl>
