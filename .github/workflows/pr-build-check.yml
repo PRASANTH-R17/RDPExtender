@@ -1,0 +1,33 @@
+name: PR Build Check
+
+on:
+  pull_request:
+    branches:
+      - main
+      - master
+      - develop
+
+  push:
+    branches:
+      - main
+      - master
+      - develop
+
+jobs:
+  build-check:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore solution
+        run: dotnet restore RDPExtender.slnx
+
+      - name: Build solution
+        run: dotnet build RDPExtender.slnx -c Release --no-restore
