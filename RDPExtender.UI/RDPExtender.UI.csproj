@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AssemblyVersion>3.0.0</AssemblyVersion>
+    <FileVersion>3.0.0</FileVersion>
+    <Version>3.0.0</Version>
+
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RDPExtender\RDPExtender.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\rdpextender-logo-1024-transparent.png" />
+    <Resource Include="Assets\rdpextender-logo-512-transparent.png" />
+    <Resource Include="Assets\rdpextender-favicon-256.png" />
+    <Resource Include="Assets\rdpextender-favicon-64.png" />
+    <Resource Include="Assets\rdpextender-favicon-32.png" />
+    <Resource Include="Assets\Fonts\InterVariable.ttf" />
+  </ItemGroup>
+
+</Project>

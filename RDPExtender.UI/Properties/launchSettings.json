@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "RDPExtender.UI": {
+      "commandName": "Project",
+      "remoteDebugEnabled": true
+    }
+  }
+}
