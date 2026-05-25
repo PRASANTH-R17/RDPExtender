@@ -602,3 +602,5 @@ $RECYCLE.BIN/
 # Additional files built by Visual Studio
 
 # End of https://www.toptal.com/developers/gitignore/api/visualstudio,csharp,windows
+# Publish profiles (kept locally; remove this rule if you want to track them)
+PublishProfiles/*.pubxml.user
