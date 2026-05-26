@@ -9,8 +9,8 @@
     <Color x:Key="TextSecondaryColor">#6B7280</Color>
     <Color x:Key="SuccessFgColor">#16A34A</Color>
     <Color x:Key="SuccessBgColor">#DCFCE7</Color>
-    <Color x:Key="WarningFgColor">#D97706</Color>
-    <Color x:Key="WarningBgColor">#FEF3C7</Color>
+    <Color x:Key="WarningFgColor">#E11D2E</Color>
+    <Color x:Key="WarningBgColor">#FEEDEE</Color>
     <Color x:Key="ErrorFgColor">#DC2626</Color>
     <Color x:Key="ErrorBgColor">#FEE2E2</Color>
 

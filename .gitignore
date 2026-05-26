@@ -600,6 +600,15 @@ $RECYCLE.BIN/
 
 ### VisualStudio Patch ###
 # Additional files built by Visual Studio
+ehthumbs.db
+
+# ===========================
+# Test / coverage results
+# ===========================
+TestResults/
+*.coverage
+*.coveragexml
+coverage.*.xml
 
 # End of https://www.toptal.com/developers/gitignore/api/visualstudio,csharp,windows
 # Publish profiles (kept locally; remove this rule if you want to track them)

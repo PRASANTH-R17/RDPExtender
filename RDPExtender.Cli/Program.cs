@@ -95,4 +95,3 @@ internal static class Program
         return string.Equals(Path.GetFileName(executablePath), "dotnet.exe", StringComparison.OrdinalIgnoreCase);
     }
 }
-

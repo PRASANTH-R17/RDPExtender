@@ -7,7 +7,7 @@ using RDPExtender.Services;
 
 namespace RDPExtender;
 
-internal static class RevertRunner
+public static class RevertRunner
 {
     public static int Run()
     {
