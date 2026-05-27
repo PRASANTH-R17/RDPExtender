@@ -45,7 +45,7 @@ Not sure which Windows you have? Press `Win + Pause/Break`, or type **About your
 
 ### The easy way (app)
 
-1. Download `RDPExtender.UI.exe` and double-click it.
+1. Download `RDPExtender.exe` and double-click it.
 2. Windows will ask for permission (User Account Control) — click **Yes**.
 3. The window will show you four status items:
    - **Windows Compatibility** — should say *Supported*.
@@ -60,14 +60,14 @@ Want to go back to the original Windows behaviour? Click **Restore Original Sett
 
 ### The command-line way
 
-For sysadmins, scripts, or servers without a desktop:
+For sysadmins, scripts, or servers without a desktop, download `RDPExtender-CLI.exe`:
 
 ```powershell
 # Turn on multiple user access
-RDPExtender.exe
+RDPExtender-CLI.exe
 
 # Turn it back off (restore the original)
-RDPExtender.exe revert
+RDPExtender-CLI.exe revert
 ```
 
 Run it from an Administrator PowerShell, or just double-click it — it will ask for elevation if needed.
