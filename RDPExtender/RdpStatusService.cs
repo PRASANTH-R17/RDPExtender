@@ -13,8 +13,11 @@ public static class RdpStatusService
     {
         if (!TermsrvPathResolver.TryResolve(out var paths) || paths is null)
         {
-            var error = new StatusItem("System", StatusLevel.Error, "SystemRoot not found");
-            return BuildSnapshot(error, error, error, error);
+            var os = new StatusItem("Windows Compatibility", StatusLevel.Warning, "Not Supported");
+            var access = new StatusItem("Multiple User Access", StatusLevel.Warning, "Not Enabled");
+            var restore = new StatusItem("Restore Point", StatusLevel.Warning, "Not Available");
+            var service = new StatusItem("Remote Desktop Service", StatusLevel.Warning, "Stopped");
+            return BuildSnapshot(os, access, restore, service);
         }
 
         var osItem = EvaluateOsCompatibility();
@@ -34,19 +37,19 @@ public static class RdpStatusService
 
             if (PatchResolver.TryResolve(windowsKind, osInfo, out _, out _, out _))
             {
-                return new StatusItem("OS Compatibility", StatusLevel.Ok, "Supported");
+                return new StatusItem("Windows Compatibility", StatusLevel.Ok, "Supported");
             }
 
             if (windowsKind == WindowsKind.Windows11)
             {
-                return new StatusItem("OS Compatibility", StatusLevel.Warning, "Not Supported");
+                return new StatusItem("Windows Compatibility", StatusLevel.Warning, "Not Supported");
             }
 
-            return new StatusItem("OS Compatibility", StatusLevel.Warning, "Not Supported");
+            return new StatusItem("Windows Compatibility", StatusLevel.Warning, "Not Supported");
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            return new StatusItem("OS Compatibility", StatusLevel.Error, ex.Message);
+            return new StatusItem("Windows Compatibility", StatusLevel.Warning, "Not Supported");
         }
     }
 
@@ -54,7 +57,7 @@ public static class RdpStatusService
     {
         if (!osSupported)
         {
-            return new StatusItem("Current Patch State", StatusLevel.Warning, "Not Patched");
+            return new StatusItem("Multiple User Access", StatusLevel.Warning, "Not Enabled");
         }
 
         try
@@ -64,7 +67,7 @@ public static class RdpStatusService
 
             if (!PatchResolver.TryResolve(windowsKind, osInfo, out var plan, out var isWindows7, out _))
             {
-                return new StatusItem("Current Patch State", StatusLevel.Warning, "Not Patched");
+                return new StatusItem("Multiple User Access", StatusLevel.Warning, "Not Enabled");
             }
 
             var dllAsBytes = File.ReadAllBytes(paths.Dll);
@@ -76,23 +79,23 @@ public static class RdpStatusService
 
             return assessment switch
             {
-                PatchAssessment.AlreadyPatched => new StatusItem("Current Patch State", StatusLevel.Ok, "Patched"),
-                PatchAssessment.NeedsPatch => new StatusItem("Current Patch State", StatusLevel.Warning, "Not Patched"),
-                PatchAssessment.PatternNotFound => new StatusItem("Current Patch State", StatusLevel.Error, "Pattern Not Found"),
-                _ => new StatusItem("Current Patch State", StatusLevel.Warning, "Not Patched")
+                PatchAssessment.AlreadyPatched => new StatusItem("Multiple User Access", StatusLevel.Ok, "Enabled"),
+                PatchAssessment.NeedsPatch => new StatusItem("Multiple User Access", StatusLevel.Warning, "Not Enabled"),
+                PatchAssessment.PatternNotFound => new StatusItem("Multiple User Access", StatusLevel.Warning, "Not Enabled"),
+                _ => new StatusItem("Multiple User Access", StatusLevel.Warning, "Not Enabled")
             };
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            return new StatusItem("Current Patch State", StatusLevel.Error, ex.Message);
+            return new StatusItem("Multiple User Access", StatusLevel.Warning, "Not Enabled");
         }
     }
 
     private static StatusItem EvaluateBackup(TermsrvPaths paths)
     {
         return File.Exists(paths.Backup)
-            ? new StatusItem("Backup Status", StatusLevel.Ok, "Available")
-            : new StatusItem("Backup Status", StatusLevel.Warning, "Not Available");
+            ? new StatusItem("Restore Point", StatusLevel.Ok, "Available")
+            : new StatusItem("Restore Point", StatusLevel.Warning, "Not Available");
     }
 
     private static StatusItem EvaluateRdpService()
@@ -100,15 +103,15 @@ public static class RdpStatusService
         var status = TermServiceManager.GetTermServiceStatus();
         if (status == ServiceControllerStatus.Running)
         {
-            return new StatusItem("RDP Service", StatusLevel.Ok, "Running");
+            return new StatusItem("Remote Desktop Service", StatusLevel.Ok, "Running");
         }
 
         if (status is null)
         {
-            return new StatusItem("RDP Service", StatusLevel.Error, "Unknown");
+            return new StatusItem("Remote Desktop Service", StatusLevel.Warning, "Stopped");
         }
 
-        return new StatusItem("RDP Service", StatusLevel.Warning, "Stopped");
+        return new StatusItem("Remote Desktop Service", StatusLevel.Warning, "Stopped");
     }
 
     private static RdpStatusSnapshot BuildSnapshot(
@@ -118,7 +121,7 @@ public static class RdpStatusService
         StatusItem service)
     {
         var patchOkForReady = patch.Level == StatusLevel.Ok
-            || patch.Text is "Not Patched" or "Patched";
+            || patch.Text is "Not Enabled" or "Enabled";
 
         var isReady = os.Level == StatusLevel.Ok
             && patchOkForReady
@@ -138,7 +141,7 @@ public static class RdpStatusService
         return new RdpStatusSnapshot(
             os, patch, backup, service,
             false,
-            "RDPExtender is not ready. Please fix the issues above.",
+            "RDPExtender needs attention. Please check the status above.",
             StatusLevel.Warning);
     }
 }

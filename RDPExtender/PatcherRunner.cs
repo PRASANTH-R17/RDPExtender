@@ -9,7 +9,7 @@ using RDPExtender.Services;
 
 namespace RDPExtender;
 
-internal static class PatcherRunner
+public static class PatcherRunner
 {
     public static int Run()
     {

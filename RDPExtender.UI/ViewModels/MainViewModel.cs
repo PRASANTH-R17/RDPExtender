@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Input;
@@ -12,13 +13,15 @@ namespace RDPExtender.UI.ViewModels;
 
 public sealed class MainViewModel : INotifyPropertyChanged
 {
+    private const string MultipleUserAccessNotEnabled = "Not Enabled";
     private readonly UiOperationLog _log;
+    private readonly string _appVersion = BuildAppVersion();
     private bool _isBusy;
-    private string _bottomBarMessage = "RDPExtender is not ready. Please fix the issues above.";
+    private string _bottomBarMessage = "RDPExtender needs attention. Please check the status above.";
     private StatusLevel _bottomBarLevel = StatusLevel.Warning;
     private string _osStatusText = "Not Supported";
     private StatusLevel _osStatusLevel = StatusLevel.Warning;
-    private string _patchStatusText = "Not Patched";
+    private string _patchStatusText = MultipleUserAccessNotEnabled;
     private StatusLevel _patchStatusLevel = StatusLevel.Warning;
     private string _backupStatusText = "Not Available";
     private StatusLevel _backupStatusLevel = StatusLevel.Warning;
@@ -40,7 +43,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     public ObservableCollection<LogEntry> Logs { get; }
 
-    public string AppVersion => "Version 1.0.0";
+    public string AppVersion => _appVersion;
 
     public bool IsBusy
     {
@@ -160,17 +163,13 @@ public sealed class MainViewModel : INotifyPropertyChanged
         IsBusy = true;
         try
         {
-            _log.Info("Checking OS compatibility...");
             await Task.Yield();
 
             var snapshot = await Task.Run(RdpStatusService.GetStatus).ConfigureAwait(true);
 
             ApplySnapshot(snapshot);
 
-            _log.Info($"OS: {snapshot.OsCompatibility.Text}");
-            _log.Info($"Patch state: {snapshot.PatchState.Text}");
-            _log.Info($"Backup: {snapshot.Backup.Text}");
-            _log.Info($"RDP service: {snapshot.RdpService.Text}");
+            _log.Info("Status refreshed.");
 
             if (snapshot.IsReady)
             {
@@ -178,7 +177,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             }
             else
             {
-                _log.Warning("RDPExtender is not ready. Please fix the issues above.");
+                _log.Warning("RDPExtender needs attention. Please check the status above.");
             }
         }
         catch (Exception ex)
@@ -205,8 +204,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
         BottomBarLevel = snapshot.BottomBarLevel;
 
         CanPatch = OsStatusLevel == StatusLevel.Ok
-            && PatchStatusText == "Not Patched"
-            && PatchStatusLevel != StatusLevel.Error;
+            && PatchStatusText == MultipleUserAccessNotEnabled
+            && PatchStatusLevel == StatusLevel.Warning;
 
         CanRevert = BackupStatusLevel == StatusLevel.Ok;
 
@@ -218,7 +217,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         IsBusy = true;
         try
         {
-            _log.Info("Starting patch...");
+            _log.Info("Enabling multiple user access...");
             var result = await RdpActionService.PatchAsync(_log).ConfigureAwait(true);
             if (result.Success)
             {
@@ -227,7 +226,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             else
             {
                 _log.Warning(result.Message);
-                MessageBox.Show(result.Message, "Patch failed", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(result.Message, "Enable action failed", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
         finally
@@ -242,7 +241,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         IsBusy = true;
         try
         {
-            _log.Info("Starting revert...");
+            _log.Info("Restoring original settings...");
             var result = await RdpActionService.RevertAsync(_log).ConfigureAwait(true);
             if (result.Success)
             {
@@ -251,7 +250,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             else
             {
                 _log.Warning(result.Message);
-                MessageBox.Show(result.Message, "Revert failed", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(result.Message, "Restore failed", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
         finally
@@ -289,4 +288,25 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     private void OnPropertyChanged([CallerMemberName] string? name = null) =>
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+
+    private static string BuildAppVersion()
+    {
+        var assembly = Assembly.GetExecutingAssembly();
+        var informational = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+        if (!string.IsNullOrWhiteSpace(informational))
+        {
+            var cleanInformational = informational.Split('+')[0];
+            return $"Version {cleanInformational}";
+        }
+
+        var version = assembly.GetName().Version;
+        if (version is null)
+        {
+            return "Version 1.0.0";
+        }
+
+        return version.Build >= 0
+            ? $"Version {version.Major}.{version.Minor}.{version.Build}"
+            : $"Version {version.Major}.{version.Minor}.0";
+    }
 }
