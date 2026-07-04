@@ -65,7 +65,7 @@ public static class RdpStatusService
             var osInfo = OsInfoProvider.Get();
             var windowsKind = OsVersionDetector.Detect(osInfo);
 
-            if (!PatchResolver.TryResolve(windowsKind, osInfo, out var plan, out var isWindows7, out _))
+            if (!PatchResolver.TryResolve(windowsKind, osInfo, out var plans, out var isWindows7, out _))
             {
                 return new StatusItem("Multiple User Access", StatusLevel.Warning, "Not Enabled");
             }
@@ -75,7 +75,7 @@ public static class RdpStatusService
 
             var assessment = isWindows7
                 ? Windows7Patcher.Assess(osInfo.FullOsBuild, dllAsText)
-                : DllPatcher.Assess(plan!, dllAsText);
+                : DllPatcher.Assess(plans!, dllAsText);
 
             return assessment switch
             {

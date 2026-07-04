@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Security.AccessControl;
 using System.Security.Principal;
@@ -32,7 +33,7 @@ public static class PatcherRunner
 
         var windowsKind = OsVersionDetector.Detect(osInfo);
 
-        if (!PatchResolver.TryResolve(windowsKind, osInfo, out var plan, out var isWindows7, out var resolveFailure))
+        if (!PatchResolver.TryResolve(windowsKind, osInfo, out var plans, out var isWindows7, out var resolveFailure))
         {
             LogUnsupportedOs(windowsKind, osInfo, resolveFailure!.Value);
             return 1;
@@ -50,7 +51,7 @@ public static class PatcherRunner
             return 1;
         }
 
-        var assessment = AssessDll(isWindows7, osInfo.FullOsBuild, plan!, dllAsText);
+        var assessment = AssessDll(isWindows7, osInfo.FullOsBuild, plans!, dllAsText);
 
         switch (assessment)
         {
@@ -116,14 +117,30 @@ public static class PatcherRunner
                 return 1;
             }
 
-            var reassess = AssessDll(isWindows7, osInfo.FullOsBuild, plan!, dllAsTextAfterAcl);
+            var reassess = AssessDll(isWindows7, osInfo.FullOsBuild, plans!, dllAsTextAfterAcl);
             if (reassess != PatchAssessment.NeedsPatch)
             {
                 exitCode = reassess == PatchAssessment.AlreadyPatched ? 0 : 1;
                 return exitCode;
             }
 
-            var outcome = ApplyPatch(isWindows7, osInfo.FullOsBuild, plan!, dllAsTextAfterAcl, paths.Dll, paths.Patched);
+            var planToApply = isWindows7
+                ? null
+                : DllPatcher.FindPlanToApply(plans!, dllAsTextAfterAcl);
+            if (!isWindows7 && planToApply is null)
+            {
+                TermsrvFileAccess.WriteColor("The pattern was not found. Nothing will be changed.\n", ConsoleColor.Yellow);
+                return 1;
+            }
+
+            var outcome = ApplyPatch(
+                isWindows7,
+                osInfo.FullOsBuild,
+                planToApply!,
+                plans!,
+                dllAsTextAfterAcl,
+                paths.Dll,
+                paths.Patched);
             exitCode = MapPatchOutcomeToExitCode(outcome);
             return exitCode;
         }
@@ -143,17 +160,22 @@ public static class PatcherRunner
         }
     }
 
-    private static PatchAssessment AssessDll(bool isWindows7, string fullOsBuild, PatchPlan plan, string dllAsText)
+    private static PatchAssessment AssessDll(
+        bool isWindows7,
+        string fullOsBuild,
+        IReadOnlyList<PatchPlan> plans,
+        string dllAsText)
     {
         return isWindows7
             ? Windows7Patcher.Assess(fullOsBuild, dllAsText)
-            : DllPatcher.Assess(plan, dllAsText);
+            : DllPatcher.Assess(plans, dllAsText);
     }
 
     private static PatchOutcome ApplyPatch(
         bool isWindows7,
         string fullOsBuild,
         PatchPlan plan,
+        IReadOnlyList<PatchPlan> plans,
         string dllAsText,
         string termsrvDllFile,
         string termsrvPatched)

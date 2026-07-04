@@ -1,7 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
-using System.Text.RegularExpressions;
 using RDPExtender.IO;
 
 namespace RDPExtender.Patching;
@@ -16,19 +16,38 @@ internal enum PatchOutcome
 
 internal static class DllPatcher
 {
-    public static PatchAssessment Assess(PatchPlan plan, string termsrvDllAsText)
+    public static PatchAssessment Assess(IReadOnlyList<PatchPlan> plans, string termsrvDllAsText)
     {
-        if (plan.Pattern.IsMatch(termsrvDllAsText))
+        foreach (var plan in plans)
         {
-            return PatchAssessment.NeedsPatch;
+            if (plan.Pattern.IsMatch(termsrvDllAsText))
+            {
+                return PatchAssessment.NeedsPatch;
+            }
         }
 
-        if (termsrvDllAsText.Contains(plan.Replacement, StringComparison.Ordinal))
+        foreach (var plan in plans)
         {
-            return PatchAssessment.AlreadyPatched;
+            if (termsrvDllAsText.Contains(plan.Replacement, StringComparison.Ordinal))
+            {
+                return PatchAssessment.AlreadyPatched;
+            }
         }
 
         return PatchAssessment.PatternNotFound;
+    }
+
+    public static PatchPlan? FindPlanToApply(IReadOnlyList<PatchPlan> plans, string termsrvDllAsText)
+    {
+        foreach (var plan in plans)
+        {
+            if (plan.Pattern.IsMatch(termsrvDllAsText))
+            {
+                return plan;
+            }
+        }
+
+        return null;
     }
 
     public static PatchOutcome Update(
