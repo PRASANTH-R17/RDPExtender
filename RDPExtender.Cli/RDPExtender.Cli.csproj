@@ -8,7 +8,7 @@
     <RootNamespace>RDPExtender</RootNamespace>
     <!-- Keep the historical CLI binary name `RDPExtender.exe`. -->
     <AssemblyName>RDPExtender</AssemblyName>
-    <AssemblyVersion>3.0.0</AssemblyVersion>
+    <AssemblyVersion>3.0.1</AssemblyVersion>
     <DebugType>embedded</DebugType>
   </PropertyGroup>
 
