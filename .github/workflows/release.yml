@@ -1,0 +1,100 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Parse version from tag
+        id: version
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}" -replace '^v', ''
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore solution
+        run: dotnet restore RDPExtender.slnx
+
+      - name: Build solution
+        run: dotnet build RDPExtender.slnx -c Release --no-restore
+
+      - name: Publish release artifacts
+        run: |
+          dotnet publish RDPExtender.UI/RDPExtender.UI.csproj -c Release -p:PublishProfile="x64 Release - Self Container"
+          dotnet publish RDPExtender.UI/RDPExtender.UI.csproj -c Release -p:PublishProfile="x86 Release- Self Container"
+          dotnet publish RDPExtender.UI/RDPExtender.UI.csproj -c Release -p:PublishProfile="ARM Release - Self Container"
+          dotnet publish RDPExtender.Cli/RDPExtender.Cli.csproj -c Release -p:PublishProfile="x64 Self Container"
+
+      - name: Stage release folder
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path release | Out-Null
+          Copy-Item "RDPExtender.UI/bin/Release/net10.0-windows/publish/win-x64/RDPExtender.UI.exe" "release/RDPExtender.exe"
+          Copy-Item "RDPExtender.UI/bin/Release/net10.0-windows/publish/win-x86/RDPExtender.UI.exe" "release/RDPExtender-x86.exe"
+          Copy-Item "RDPExtender.UI/bin/Release/net10.0-windows/publish/win-arm64/RDPExtender.UI.exe" "release/RDPExtender-arm64.exe"
+          Copy-Item "RDPExtender.Cli/bin/Release/net10.0-windows/publish/win-x64/RDPExtender.exe" "release/RDPExtender-CLI.exe"
+
+      - name: Compose release body
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $version = "${{ steps.version.outputs.version }}"
+
+          $body = @{ tag_name = $tag }
+          $previousTag = git describe --tags --abbrev=0 HEAD^ 2>$null
+          if ($LASTEXITCODE -eq 0 -and $previousTag) {
+            $body.previous_tag_name = $previousTag
+          }
+
+          $headers = @{
+            Authorization = "Bearer $env:GITHUB_TOKEN"
+            Accept        = "application/vnd.github+json"
+          }
+
+          $uri = "https://api.github.com/repos/${{ github.repository }}/releases/generate-notes"
+          $response = Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body ($body | ConvertTo-Json) -ContentType "application/json"
+
+          $downloadSection = Get-Content ".github/release-download-section.md" -Raw
+
+          $releaseBody = @(
+            "# RDPExtender $version"
+            ""
+            $response.body
+            ""
+            $downloadSection.Trim()
+          ) -join "`n"
+
+          $releaseBody | Out-File -FilePath "release/RELEASE_BODY.md" -Encoding utf8NoBOM
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: RDP Extender v${{ steps.version.outputs.version }}
+          body_path: release/RELEASE_BODY.md
+          files: |
+            release/RDPExtender.exe
+            release/RDPExtender-x86.exe
+            release/RDPExtender-arm64.exe
+            release/RDPExtender-CLI.exe
+          draft: false
