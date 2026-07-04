@@ -1,0 +1,49 @@
+name: Build Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore solution
+        run: dotnet restore RDPExtender.slnx
+
+      - name: Build solution
+        run: dotnet build RDPExtender.slnx -c Release --no-restore
+
+      - name: Publish release artifacts
+        run: |
+          dotnet publish RDPExtender.UI/RDPExtender.UI.csproj -c Release -p:PublishProfile="x64 Release - Self Container"
+          dotnet publish RDPExtender.UI/RDPExtender.UI.csproj -c Release -p:PublishProfile="x86 Release- Self Container"
+          dotnet publish RDPExtender.UI/RDPExtender.UI.csproj -c Release -p:PublishProfile="ARM Release - Self Container"
+          dotnet publish RDPExtender.Cli/RDPExtender.Cli.csproj -c Release -p:PublishProfile="x64 Self Container"
+
+      - name: Stage release folder
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path release | Out-Null
+          Copy-Item "RDPExtender.UI/bin/Release/net10.0-windows/publish/win-x64/RDPExtender.UI.exe" "release/RDPExtender.exe"
+          Copy-Item "RDPExtender.UI/bin/Release/net10.0-windows/publish/win-x86/RDPExtender.UI.exe" "release/RDPExtender-x86.exe"
+          Copy-Item "RDPExtender.UI/bin/Release/net10.0-windows/publish/win-arm64/RDPExtender.UI.exe" "release/RDPExtender-arm64.exe"
+          Copy-Item "RDPExtender.Cli/bin/Release/net10.0-windows/publish/win-x64/RDPExtender.exe" "release/RDPExtender-CLI.exe"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: RDPExtender-${{ github.run_number }}
+          path: release/
+          retention-days: 90

@@ -4,12 +4,6 @@ on:
   push:
     tags:
       - 'v*'
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Release version (e.g. 3.0.1)'
-        required: true
-        default: '3.0.1'
 
 permissions:
   contents: write
@@ -28,13 +22,8 @@ jobs:
         id: version
         shell: pwsh
         run: |
-          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
-            $version = "${{ github.event.inputs.version }}"
-            $tag = "v$version"
-          } else {
-            $tag = "${{ github.ref_name }}"
-            $version = $tag -replace '^v', ''
-          }
+          $tag = "${{ github.ref_name }}"
+          $version = $tag -replace '^v', ''
           "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
           "tag=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
